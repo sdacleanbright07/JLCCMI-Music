@@ -7,7 +7,11 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    .chord { color: #2563eb; font-weight: bold; }
+    .chord {
+     color: #1e3a8a;      /* deep blue */
+     font-weight: 900;    /* extra bold */
+     font-size: 1.1rem;   /* slightly larger */
+   }
   pre { white-space: pre-wrap; }
   pre.big-chords { font-size: 1.25rem; }
   </style>
@@ -227,13 +231,13 @@ function displaySongs() {
 
     const pre = document.createElement('pre');
     pre.className = 'hidden mt-2 whitespace-pre-wrap font-mono text-sm bg-gray-50 p-2 rounded';
-    pre.textContent = song.content || "";
+    pre.innerHTML = renderChords(song.content || "");
 
     let transposeSteps = 0;
     showBtn.onclick = () => pre.classList.toggle('hidden');
-    upBtn.onclick = () => { transposeSteps++; pre.textContent = transposeSong(song.content, transposeSteps);
+    upBtn.onclick = () => { transposeSteps++; pre.innerHTML = transposeSong(song.content, transposeSteps);
     updateKey(song.key, transposeSteps, song.id); };
-    downBtn.onclick = () => { transposeSteps--; pre.textContent = transposeSong(song.content, transposeSteps);
+    downBtn.onclick = () => { transposeSteps--; pre.innerHTML = transposeSong(song.content, transposeSteps);
     updateKey(song.key, transposeSteps, song.id); };
     sizeBtn.onclick = () => pre.classList.toggle('big-chords');
 
@@ -287,24 +291,24 @@ function renderSongs(listData) {
     const showBtn = document.createElement('button');
     showBtn.textContent = 'Show Chords'; showBtn.className = 'bg-blue-100 px-2 py-1 rounded';
     const upBtn = document.createElement('button');
-    upBtn.textContent = '+'; upBtn.className = 'bg-gray-200 px-2 rounded';
+    upBtn.textContent = 'Transpose +'; upBtn.className = 'bg-gray-200 px-2 rounded';
     const downBtn = document.createElement('button');
-    downBtn.textContent = '-'; downBtn.className = 'bg-gray-200 px-2 rounded';
+    downBtn.textContent = 'Transpose -'; downBtn.className = 'bg-gray-200 px-2 rounded';
     const sizeBtn = document.createElement('button');
     sizeBtn.textContent = 'Toggle Size'; sizeBtn.className = 'bg-gray-200 px-2 rounded';
 
     const pre = document.createElement('pre');
     pre.className = 'hidden mt-2 whitespace-pre-wrap font-mono text-sm bg-gray-50 p-2 rounded';
-    pre.textContent = song.content || "";
+    pre.innerHTML = renderChords(song.content || "");
 
     let transposeSteps = 0;
     showBtn.onclick = () => pre.classList.toggle('hidden');
     upBtn.onclick = () => { transposeSteps++; 
-    pre.textContent = transposeSong(song.content, transposeSteps);
+    pre.innerHTML = transposeSong(song.content, transposeSteps);
     updateKey(song.key, transposeSteps, song.id);
      };
     downBtn.onclick = () => { transposeSteps--; 
-    pre.textContent = transposeSong(song.content, transposeSteps);
+    pre.innerHTML = transposeSong(song.content, transposeSteps);
     updateKey(song.key, transposeSteps, song.id);
      };
     sizeBtn.onclick = () => pre.classList.toggle('big-chords');
@@ -356,8 +360,8 @@ function renderSessions(listData) {
         title.textContent = `${song.title} - ${song.artist}`;
         title.className = 'font-semibold cursor-pointer';
         const pre = document.createElement('pre');
-        pre.className = 'hidden mt-1 bg-gray-50 p-2 rounded text-sm font-mono';
-        pre.textContent = song.content || "";
+        pre.className = 'hidden mt-1 bg-gray-50 p-2 rounded font-mono big-chords';
+        pre.innerHTML = renderChords(song.content || "");
         title.onclick = () => pre.classList.toggle('hidden');
         sdiv.append(title, pre);
         songsContainer.appendChild(sdiv);
@@ -373,8 +377,21 @@ function renderSessions(listData) {
 }
 //end
 
+function renderChords(content) {
+  return content.replace(/\[([A-G][#b]?m?7?)\]/g, (match, chord) => {
+    return `<span class="chord">${chord}</span>`;   // no brackets
+  });
+}
+
+
+
 function transposeSong(content, steps) {
-  return content.replace(/\[([A-G][#b]?m?7?)\]/g, (_, chord) => `[${transposeChord(chord, steps)}]`);
+ const transposed = content.replace(/\[([A-G][#b]?m?7?)\]/g, (_, chord) => {
+    return `[${transposeChord(chord, steps)}]`;  // keep brackets internally
+  });
+  return transposed.replace(/\[([A-G][#b]?m?7?)\]/g, (_, chord) => {
+    return `<span class="chord">${chord}</span>`;  // display clean
+  });
 }
 
 function editSong(id) {
@@ -413,7 +430,6 @@ function addSection(type="Verse", text="") {
         <option ${type==="Bridge"?"selected":""}>Bridge</option>
         <option ${type==="Intro"?"selected":""}>Intro</option>
         <option ${type==="Outro"?"selected":""}>Outro</option>
-        <option ${type==="Refrain"?"selected":""}>Refrain</option>
         <option ${type==="Instrumental"?"selected":""}>Instrumental</option>
       </select>
       <button type="button" class="text-red-600 remove-section">🗑️</button>
@@ -470,23 +486,42 @@ function displaySessions() {
       <div><h3 class="font-bold">${escapeHtml(session.name)}</h3>
       <p class="text-sm text-gray-600">${escapeHtml(session.date || '')}</p></div>
       <button class="text-red-600 delete-session">🗑️</button></div>`;
+
     const songsContainer = document.createElement('div');
-    session.songs.forEach(id => {
+    session.songs.forEach((id, idx) => {
       const song = songs.find(s => String(s.id) === String(id));
       if (song) {
         const sdiv = document.createElement('div');
-        sdiv.className = 'bg-white p-2 rounded mb-1 shadow';
+        sdiv.className = 'bg-white p-2 rounded mb-1 shadow flex justify-between items-center';
+
+        const left = document.createElement('div');
         const title = document.createElement('div');
         title.textContent = `${song.title} - ${song.artist}`;
         title.className = 'font-semibold cursor-pointer';
         const pre = document.createElement('pre');
-        pre.className = 'hidden mt-1 bg-gray-50 p-2 rounded text-sm font-mono';
-        pre.textContent = song.content || "";
+        pre.className = 'hidden mt-1 bg-gray-50 p-2 rounded font-mono big-chords';
+        pre.innerHTML = renderChords(song.content || "");
         title.onclick = () => pre.classList.toggle('hidden');
-        sdiv.append(title, pre);
+        left.append(title, pre);
+
+        const right = document.createElement('div');
+        right.className = 'flex flex-col gap-1';
+        const upBtn = document.createElement('button');
+        upBtn.textContent = "⬆️";
+        upBtn.className = "text-blue-500";
+        upBtn.onclick = () => moveSongInSession(session.id, idx, -1);
+
+        const downBtn = document.createElement('button');
+        downBtn.textContent = "⬇️";
+        downBtn.className = "text-blue-500";
+        downBtn.onclick = () => moveSongInSession(session.id, idx, 1);
+
+        right.append(upBtn, downBtn);
+        sdiv.append(left, right);
         songsContainer.appendChild(sdiv);
       }
     });
+
     card.appendChild(songsContainer);
     card.querySelector('.delete-session').onclick = () => {
       sessions = sessions.filter(s => s.id !== session.id);
@@ -494,6 +529,21 @@ function displaySessions() {
     };
     list.appendChild(card);
   });
+}
+
+function moveSongInSession(sessionId, songIndex, direction) {
+  const session = sessions.find(s => s.id === sessionId);
+  if (!session) return;
+
+  const newIndex = songIndex + direction;
+  if (newIndex < 0 || newIndex >= session.songs.length) return;
+
+  // swap songs
+  const temp = session.songs[songIndex];
+  session.songs[songIndex] = session.songs[newIndex];
+  session.songs[newIndex] = temp;
+
+  displaySessions(); // re-render with new order
 }
 
 function showCreateSession() {
@@ -560,7 +610,3 @@ function escapeHtml(unsafe) {
   4TH LAMP • EST.2025
 </footer>
 </html>
-
-
-
-
