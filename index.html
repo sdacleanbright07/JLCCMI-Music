@@ -16,7 +16,7 @@
   pre.big-chords { font-size: 1.25rem; }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body class="bg-gray-50 min-h-screen flex flex-col font-sans">
   <!-- Header -->
   <header class="bg-blue-600 text-white p-4 text-center text-xl font-bold">
     JLCCMI CHORD REPOSITORY
@@ -182,8 +182,16 @@ async function saveSong(e) {
   }
 }
 
+const DELETE_PASSWORD = "lamp2025"; 
+
 async function deleteSong(id) {
-  if (!confirm("Delete this song?")) return;
+  const entered = prompt("Enter Admin password to delete:");
+  if (entered !== DELETE_PASSWORD) {
+    alert("Incorrect password. Delete cancelled.");
+    return;
+  }
+  if (!confirm("Are you sure you want to delete this song?")) return;
+
   try {
     const { error } = await supabaseClient.from("songs").delete().eq("id", id);
     if (error) throw error;
