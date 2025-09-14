@@ -109,11 +109,13 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* app state */
 let songs = [];
-let sessions = [];
+let sessions = JSON.parse(localStorage.getItem("sessions")) || [];
 let currentSongId = null;
 let editingMode = false;
 const CHORDS = ["C","D","E","F","G","A","B"];
 const ALL_CHORDS = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+
+
 
 /* transpose helper */
 function transposeChord(chord, steps) {
@@ -129,8 +131,9 @@ function transposeChord(chord, steps) {
 
 /* init */
 document.addEventListener('DOMContentLoaded', () => {
-  fetchSongs();
-  displaySessions();
+  fetchSongs().then(() => {
+    displaySessions(); // now songs are loaded first, then sessions render properly
+  });
   addSection();
   showTab('songs');
 });
@@ -519,7 +522,10 @@ function displaySessions() {
         right.append(upBtn, downBtn);
         sdiv.append(left, right);
         songsContainer.appendChild(sdiv);
+
+
       }
+
     });
 
     card.appendChild(songsContainer);
@@ -529,6 +535,8 @@ function displaySessions() {
     };
     list.appendChild(card);
   });
+
+  localStorage.setItem("sessions", JSON.stringify(sessions));
 }
 
 function moveSongInSession(sessionId, songIndex, direction) {
