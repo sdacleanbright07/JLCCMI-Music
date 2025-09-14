@@ -276,7 +276,7 @@ function renderSongs(listData) {
     editBtn.textContent = 'Edit'; editBtn.className = 'text-yellow-500';
     editBtn.onclick = () => editSong(song.id);
     const delBtn = document.createElement('button');
-    delBtn.textContent = 'Delete'; delBtn.className = 'text-red-600';
+    delBtn.textContent = 'Delete'; delBtn.className = 'text-red-600'; delBtn.disabled = true;
     delBtn.onclick = () => deleteSong(song.id);
     actions.appendChild(editBtn); actions.appendChild(delBtn);
 
@@ -560,5 +560,6 @@ function escapeHtml(unsafe) {
   4TH LAMP • EST.2025
 </footer>
 </html>
+
 
 
