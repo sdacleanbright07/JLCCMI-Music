@@ -112,9 +112,10 @@ let songs = [];
 let sessions = JSON.parse(localStorage.getItem("sessions")) || [];
 let currentSongId = null;
 let editingMode = false;
-const CHORDS = ["C","D","E","F","G","A","B"];
-const ALL_CHORDS = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+// Global tracker for the current key
+let currentKey = null;
 
+const ALL_CHORDS = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 
 
 /* transpose helper */
@@ -333,13 +334,18 @@ function renderSongs(listData) {
 
 function updateKey(originalKey, steps, songId) {
   if (!originalKey) return;
-  const idx = ALL_CHORDS.indexOf(originalKey);
+
+  let idx = ALL_CHORDS.indexOf(originalKey);
   if (idx === -1) return;
-  const newIdx = (idx + steps + ALL_CHORDS.length) % ALL_CHORDS.length;
+
+  // Correct wrap-around for both + and - infinite steps
+  let newIdx = ((idx + steps) % ALL_CHORDS.length + ALL_CHORDS.length) % ALL_CHORDS.length;
   const newKey = ALL_CHORDS[newIdx];
+
   const keySpan = document.getElementById(`key-${songId}`);
   if (keySpan) keySpan.textContent = "Key: " + newKey;
 }
+
 
 //searchsession
 function filterSessions() {
@@ -396,14 +402,58 @@ function renderChords(content) {
 
 
 
+function transposeChord(chord, steps) {
+  const match = chord.match(/^([A-G](#|b)?)(.*)$/);
+  if (!match) return chord;
+
+  const root = match[1];
+  const suffix = match[3] || "";
+
+  let idx = ALL_CHORDS.indexOf(root);
+  if (idx === -1) return chord;
+
+  let newIdx = ((idx + steps) % ALL_CHORDS.length + ALL_CHORDS.length) % ALL_CHORDS.length;
+  const newRoot = ALL_CHORDS[newIdx];
+  return newRoot + suffix;
+}
+
 function transposeSong(content, steps) {
- const transposed = content.replace(/\[([A-G][#b]?m?7?)\]/g, (_, chord) => {
-    return `[${transposeChord(chord, steps)}]`;  // keep brackets internally
-  });
-  return transposed.replace(/\[([A-G][#b]?m?7?)\]/g, (_, chord) => {
-    return `<span class="chord">${chord}</span>`;  // display clean
+  return content.replace(/\[([A-G][#b]?[^\]]*)\]/g, (_, chord) => {
+    return `<span class="chord">${transposeChord(chord, steps)}</span>`;
   });
 }
+
+function transposeKey(originalKey, steps) {
+  if (!originalKey) return null;
+
+  let idx = ALL_CHORDS.indexOf(originalKey);
+  if (idx === -1) return originalKey;
+
+  let newIdx = ((idx + steps) % ALL_CHORDS.length + ALL_CHORDS.length) % ALL_CHORDS.length;
+  return ALL_CHORDS[newIdx];
+}
+
+function transposeChord(chord, steps) {
+  const match = chord.match(/^([A-G](#|b)?)(.*)$/);
+  if (!match) return chord;
+
+  const root = match[1];
+  const suffix = match[3] || "";
+
+  let idx = ALL_CHORDS.indexOf(root);
+  if (idx === -1) return chord;
+
+  // Correct wrapping for infinite +/-
+  let newIdx = (idx + steps) % ALL_CHORDS.length;
+  if (newIdx < 0) newIdx += ALL_CHORDS.length;
+
+  const newRoot = ALL_CHORDS[newIdx];
+  return newRoot + suffix;
+}
+
+
+
+
 
 function editSong(id) {
   const song = songs.find(s => String(s.id) === String(id));
