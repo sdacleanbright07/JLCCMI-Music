@@ -480,7 +480,7 @@ function addSection(type="Verse", text="") {
   const id = "section-" + sectionCounter;
   const block = document.createElement("div");
   block.className = "section-block bg-white p-3 rounded shadow";
-  const chordButtonsHtml = CHORDS.map(ch =>
+  const chordButtonsHtml = ALL_CHORDS.map(ch =>
     `<button type="button" class="px-2 py-1 bg-gray-200 rounded mr-1 mb-1" data-chord="${ch}">${ch}</button>`
   ).join("") + `<button type="button" class="px-2 py-1 bg-gray-200 rounded mr-1 mb-1" data-chord="7">7</button>`;
   block.innerHTML = `
@@ -676,5 +676,6 @@ function escapeHtml(unsafe) {
   4TH LAMP • EST.2025
 </footer>
 </html>
+
 
 
