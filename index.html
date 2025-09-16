@@ -481,8 +481,7 @@ function addSection(type="Verse", text="") {
   const block = document.createElement("div");
   block.className = "section-block bg-white p-3 rounded shadow";
   const chordButtonsHtml = CHORDS.map(ch =>
-    `<button type="button" class="px-2 py-1 bg-gray-200 rounded mr-1 mb-1" data-chord="${ch}">${ch}</button>`
-  ).join("") + `<button type="button" class="px-2 py-1 bg-gray-200 rounded mr-1 mb-1" data-chord="7">7</button>`;
+    `<button type="button" class="px-2 py-1 bg-gray-200 rounded mr-1 mb-1" data-chord="${ch}">${ch}</button>`).join("");
   block.innerHTML = `
     <div class="flex justify-between mb-2">
       <select class="p-1 border rounded">
@@ -676,3 +675,4 @@ function escapeHtml(unsafe) {
   4TH LAMP • EST.2025
 </footer>
 </html>
+
