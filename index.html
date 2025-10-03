@@ -71,7 +71,6 @@
       </form>
     </section>
 
-//Whats New? Chukurukuk
     <div id="updateModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
   <div class="bg-white rounded-lg shadow-lg p-6 w-96">
     <h2 class="text-xl font-bold mb-2">✨ What’s New</h2>
@@ -634,28 +633,31 @@ function displaySessions() {
     });
 
     // add song dropdown + button
-    const addRow = document.createElement("div");
-    addRow.className = "mt-2 flex gap-2 items-center";
+const addRow = document.createElement("div");
+// default = column (mobile), switch to row at sm: breakpoint
+addRow.className = "mt-2 flex flex-col sm:flex-row gap-2 sm:items-center";
 
-    const addSelect = document.createElement("select");
-    addSelect.className = "border rounded p-1";
-    songs.forEach(song => {
-      const option = document.createElement("option");
-      option.value = song.id;
-      option.textContent = `${song.title} - ${song.artist}`;
-      addSelect.appendChild(option);
-    });
+const addSelect = document.createElement("select");
+// full width on mobile, flex-grow on larger screens
+addSelect.className = "border rounded p-2 w-full sm:flex-1";
+songs.forEach(song => {
+  const option = document.createElement("option");
+  option.value = song.id;
+  option.textContent = `${song.title} - ${song.artist}`;
+  addSelect.appendChild(option);
+});
 
-    const addButton = document.createElement("button");
-    addButton.textContent = "Add Song";
-    addButton.className = "bg-blue-500 text-white px-2 py-1 rounded";
-    addButton.onclick = () => {
-      const songId = addSelect.value;
-      addSongToSession(session.id, songId);
-    };
+const addButton = document.createElement("button");
+addButton.textContent = "Add Song";
+// full width on mobile, auto on desktop
+addButton.className = "bg-blue-500 text-white px-3 py-2 rounded w-full sm:w-auto";
+addButton.onclick = () => {
+  const songId = addSelect.value;
+  addSongToSession(session.id, songId);
+};
 
-    addRow.appendChild(addSelect);
-    addRow.appendChild(addButton);
+addRow.appendChild(addSelect);
+addRow.appendChild(addButton);
 
     // append everything
     card.appendChild(songsContainer);
