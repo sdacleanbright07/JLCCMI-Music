@@ -71,6 +71,21 @@
       </form>
     </section>
 
+//Whats New? Chukurukuk
+    <div id="updateModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+  <div class="bg-white rounded-lg shadow-lg p-6 w-96">
+    <h2 class="text-xl font-bold mb-2">✨ What’s New</h2>
+    <ul class="list-disc ml-5 text-gray-700 mb-4">
+      <li>Added Ability to add/remove songs from sessions 🎵</li>
+      <li>Session Saves in Database not in local ✅</li>
+      <li>More Next! Suggest 🖱️</li>
+    </ul>
+    <button id="closeUpdateModal" class="bg-blue-500 text-white px-4 py-2 rounded">
+      Got it!
+    </button>
+  </div>
+    </div>
+
     <!-- Sessions -->
     <section id="sessionsContent" class="tab-content hidden">
       <input id="sessionSearch" 
@@ -109,7 +124,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* app state */
 let songs = [];
-let sessions = JSON.parse(localStorage.getItem("sessions")) || [];
+let sessions = [];
 let currentSongId = null;
 let editingMode = false;
 // Global tracker for the current key
@@ -133,7 +148,7 @@ function transposeChord(chord, steps) {
 /* init */
 document.addEventListener('DOMContentLoaded', () => {
   fetchSongs().then(() => {
-    displaySessions(); // now songs are loaded first, then sessions render properly
+    fetchSessions(); // load sessions from Supabase, not localStorage
   });
   addSection();
   showTab('songs');
@@ -346,6 +361,23 @@ function updateKey(originalKey, steps, songId) {
   if (keySpan) keySpan.textContent = "Key: " + newKey;
 }
 
+//SessionsSupabase
+
+async function fetchSessions() {
+  const { data, error } = await supabaseClient.from("sessions").select("*").order("date");
+  if (error) {
+    console.error("fetchSessions error:", error);
+    return;
+  }
+
+  // Make sure songs is always an array
+  sessions = (data || []).map(s => ({
+    ...s,
+    songs: Array.isArray(s.songs) ? s.songs : []   // ✅ no JSON.parse needed anymore
+  }));
+  displaySessions();
+}
+
 
 //searchsession
 function filterSessions() {
@@ -540,21 +572,29 @@ function clearForm() {
 function displaySessions() {
   const list = document.getElementById('sessionsList');
   list.innerHTML = '';
+
   sessions.forEach(session => {
     const card = document.createElement('div');
     card.className = 'bg-gray-50 p-4 rounded border';
-    card.innerHTML = `<div class="flex justify-between mb-2">
-      <div><h3 class="font-bold">${escapeHtml(session.name)}</h3>
-      <p class="text-sm text-gray-600">${escapeHtml(session.date || '')}</p></div>
-      <button class="text-red-600 delete-session">🗑️</button></div>`;
 
+    card.innerHTML = `<div class="flex justify-between mb-2">
+      <div>
+        <h3 class="font-bold">${escapeHtml(session.name)}</h3>
+        <p class="text-sm text-gray-600">${escapeHtml(session.date || '')}</p>
+      </div>
+      <button class="text-red-600 delete-session">🗑️</button>
+    </div>`;
+
+    // container for the songs in this session
     const songsContainer = document.createElement('div');
+
     session.songs.forEach((id, idx) => {
       const song = songs.find(s => String(s.id) === String(id));
       if (song) {
         const sdiv = document.createElement('div');
         sdiv.className = 'bg-white p-2 rounded mb-1 shadow flex justify-between items-center';
 
+        // LEFT (title + chords toggle)
         const left = document.createElement('div');
         const title = document.createElement('div');
         title.textContent = `${song.title} - ${song.artist}`;
@@ -565,51 +605,97 @@ function displaySessions() {
         title.onclick = () => pre.classList.toggle('hidden');
         left.append(title, pre);
 
+        // RIGHT (buttons)
         const right = document.createElement('div');
-        right.className = 'flex flex-col gap-1';
+        right.className = 'flex flex-row gap-2';
+
+        // Move up
         const upBtn = document.createElement('button');
         upBtn.textContent = "⬆️";
         upBtn.className = "text-blue-500";
         upBtn.onclick = () => moveSongInSession(session.id, idx, -1);
 
+        // Move down
         const downBtn = document.createElement('button');
         downBtn.textContent = "⬇️";
         downBtn.className = "text-blue-500";
         downBtn.onclick = () => moveSongInSession(session.id, idx, 1);
 
-        right.append(upBtn, downBtn);
+        // Delete
+        const delBtn = document.createElement('button');
+        delBtn.textContent = "🗑️";
+        delBtn.className = "text-red-500";
+        delBtn.onclick = () => deleteSongFromSession(session.id, id);
+
+        right.append(upBtn, downBtn, delBtn);
         sdiv.append(left, right);
         songsContainer.appendChild(sdiv);
-
-
       }
-
     });
 
-    card.appendChild(songsContainer);
-    card.querySelector('.delete-session').onclick = () => {
-      sessions = sessions.filter(s => s.id !== session.id);
-      displaySessions();
+    // add song dropdown + button
+    const addRow = document.createElement("div");
+    addRow.className = "mt-2 flex gap-2 items-center";
+
+    const addSelect = document.createElement("select");
+    addSelect.className = "border rounded p-1";
+    songs.forEach(song => {
+      const option = document.createElement("option");
+      option.value = song.id;
+      option.textContent = `${song.title} - ${song.artist}`;
+      addSelect.appendChild(option);
+    });
+
+    const addButton = document.createElement("button");
+    addButton.textContent = "Add Song";
+    addButton.className = "bg-blue-500 text-white px-2 py-1 rounded";
+    addButton.onclick = () => {
+      const songId = addSelect.value;
+      addSongToSession(session.id, songId);
     };
+
+    addRow.appendChild(addSelect);
+    addRow.appendChild(addButton);
+
+    // append everything
+    card.appendChild(songsContainer);
+    card.appendChild(addRow);
+
+    // delete session
+    card.querySelector('.delete-session').onclick = async () => {
+      const { error } = await supabaseClient.from("sessions").delete().eq("id", session.id);
+      if (error) {
+        console.error("deleteSession error:", error);
+        alert("Error deleting session");
+        return;
+      }
+      await fetchSessions();
+    };
+
     list.appendChild(card);
   });
-
-  localStorage.setItem("sessions", JSON.stringify(sessions));
 }
 
-function moveSongInSession(sessionId, songIndex, direction) {
+localStorage.setItem("sessions", JSON.stringify(sessions));
+
+async function moveSongInSession(sessionId, songIndex, direction) {
   const session = sessions.find(s => s.id === sessionId);
   if (!session) return;
 
   const newIndex = songIndex + direction;
   if (newIndex < 0 || newIndex >= session.songs.length) return;
 
-  // swap songs
+  // swap
   const temp = session.songs[songIndex];
   session.songs[songIndex] = session.songs[newIndex];
   session.songs[newIndex] = temp;
 
-  displaySessions(); // re-render with new order
+  const { error } = await supabaseClient.from("sessions")
+    .update({ songs: session.songs })
+    .eq("id", sessionId);
+  if (error) console.error("updateSession order error:", error);
+
+  displaySessions();
 }
 
 function showCreateSession() {
@@ -627,13 +713,26 @@ function showCreateSession() {
   if (modal) modal.classList.remove('hidden');
 }
 
-function saveSession(e) {
+async function saveSession(e) {
   e.preventDefault();
   const name = document.getElementById('sessionName').value.trim();
   const date = document.getElementById('sessionDate').value;
   const selected = Array.from(document.querySelectorAll('#songSelection input:checked')).map(cb => cb.value);
-  sessions.push({ id: Date.now(), name, date, songs: selected });
-  displaySessions();
+
+  const newSession = { 
+    name, 
+    date, 
+    songs: selected   // ✅ no JSON.stringify, store array directly
+  };
+
+  const { error } = await supabaseClient.from("sessions").insert([newSession]);
+  if (error) {
+    console.error("saveSession error:", error);
+    alert("Error saving session");
+    return;
+  }
+
+  await fetchSessions();
   closeSessionModal();
 }
 
@@ -661,6 +760,52 @@ function showTab(tabName) {
   }
 }
 
+//ADD SONG
+async function addSongToSession(sessionId, songId) {
+  const session = sessions.find(s => s.id === sessionId);
+  if (!session) return;
+
+  if (!session.songs.includes(songId)) {
+    session.songs.push(songId);
+
+    const { error } = await supabaseClient
+      .from("sessions")
+      .update({ songs: session.songs })
+      .eq("id", sessionId);
+
+    if (error) {
+      console.error("addSongToSession error:", error);
+      alert("Error adding song to session");
+      return;
+    }
+    await fetchSessions();
+  } else {
+    alert("Song already in session");
+  }
+}
+
+
+//delete song
+async function deleteSongFromSession(sessionId, songId) {
+  const session = sessions.find(s => s.id === sessionId);
+  if (!session) return;
+
+  const updatedSongs = session.songs.filter(id => id !== songId);
+
+  const { error } = await supabaseClient
+    .from("sessions")
+    .update({ songs: updatedSongs })
+    .eq("id", sessionId);
+
+  if (error) {
+    console.error("deleteSongFromSession error:", error);
+    return;
+  }
+
+  await fetchSessions();
+}
+
+
 /* -----------------------------
    Utilities
    ----------------------------- */
@@ -670,11 +815,34 @@ function escapeHtml(unsafe) {
     { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]
   ));
 }
+
+//APP VERSION
+
+// Set your app version here chuckurukuk mama
+const APP_VERSION = "1.0.1";  // increment whenever you add changes
+
+function showUpdateModalIfNeeded() {
+  const lastVersion = localStorage.getItem("lastSeenVersion");
+
+  if (lastVersion !== APP_VERSION) {
+    // show modal
+    document.getElementById("updateModal").classList.remove("hidden");
+
+    // when user closes, save version
+    document.getElementById("closeUpdateModal").onclick = () => {
+      document.getElementById("updateModal").classList.add("hidden");
+      localStorage.setItem("lastSeenVersion", APP_VERSION);
+    };
+  }
+}
+
+// Call this when app loads
+document.addEventListener("DOMContentLoaded", showUpdateModalIfNeeded);
+
 </script>
 </body>
 <footer class="w-full py-4 mt-8 bg-gray-100 text-center text-gray-600 text-sm font-sans">
   4TH LAMP • EST.2025
 </footer>
 </html>
-
 
