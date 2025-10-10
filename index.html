@@ -218,6 +218,7 @@ async function deleteSong(id) {
 }
 
 function displaySongs() {
+
   const list = document.getElementById('songsList');
   list.innerHTML = '';
   songs.forEach(song => {
@@ -258,19 +259,59 @@ function displaySongs() {
     const pre = document.createElement('pre');
     pre.className = 'hidden mt-2 whitespace-pre-wrap font-mono text-sm bg-gray-50 p-2 rounded';
     pre.innerHTML = renderChords(song.content || "");
-
+    const rawContent = song.content;
     let transposeSteps = 0;
     showBtn.onclick = () => pre.classList.toggle('hidden');
-    upBtn.onclick = () => { transposeSteps++; pre.innerHTML = transposeSong(song.content, transposeSteps);
-    updateKey(song.key, transposeSteps, song.id); };
-    downBtn.onclick = () => { transposeSteps--; pre.innerHTML = transposeSong(song.content, transposeSteps);
-    updateKey(song.key, transposeSteps, song.id); };
+  upBtn.onclick = () => {
+  transposeSteps++;
+  const newKey = transposeKey(song.key, transposeSteps);
+  pre.innerHTML = transposeSong(rawContent, transposeSteps); // preview
+  document.getElementById(`key-${song.id}`).textContent = "Key: " + newKey;
+};
+
+downBtn.onclick = () => {
+  transposeSteps--;
+  const newKey = transposeKey(song.key, transposeSteps);
+  pre.innerHTML = transposeSong(rawContent, transposeSteps); // preview
+  document.getElementById(`key-${song.id}`).textContent = "Key: " + newKey;
+};
     sizeBtn.onclick = () => pre.classList.toggle('big-chords');
 
-    controls.append(showBtn, upBtn, downBtn, sizeBtn);
+const saveBtn = document.createElement("button");
+saveBtn.textContent = "💾 Save Transpose";
+saveBtn.className = "bg-green-500 text-white px-2 rounded";
+
+saveBtn.onclick = async () => {
+  const newKey = await updateKey(song.key, transposeSteps, song.id, song.content);
+
+  if (newKey) {
+    // re-fetch updated version from Supabase
+    const { data, error } = await supabaseClient
+      .from("songs")
+      .select("*")
+      .eq("id", song.id)
+      .single();
+
+    if (!error && data) {
+      song.key = data.key;
+      song.content = data.content;
+      pre.innerHTML = renderChords(song.content);
+      document.getElementById(`key-${song.id}`).textContent = "Key: " + data.key;
+      transposeSteps = 0;
+    }
+  }
+};
+
+
+    controls.append(showBtn, upBtn, downBtn, sizeBtn, saveBtn);
+
+
 
     card.append(header, actions, controls, pre);
+
     list.appendChild(card);
+
+    
   });
 }
 //search
@@ -326,38 +367,96 @@ function renderSongs(listData) {
     const pre = document.createElement('pre');
     pre.className = 'hidden mt-2 whitespace-pre-wrap font-mono text-sm bg-gray-50 p-2 rounded';
     pre.innerHTML = renderChords(song.content || "");
-
+    const rawContent = song.content;
     let transposeSteps = 0;
     showBtn.onclick = () => pre.classList.toggle('hidden');
-    upBtn.onclick = () => { transposeSteps++; 
-    pre.innerHTML = transposeSong(song.content, transposeSteps);
-    updateKey(song.key, transposeSteps, song.id);
-     };
-    downBtn.onclick = () => { transposeSteps--; 
-    pre.innerHTML = transposeSong(song.content, transposeSteps);
-    updateKey(song.key, transposeSteps, song.id);
-     };
+   upBtn.onclick = () => {
+  transposeSteps++;
+  const newKey = transposeKey(song.key, transposeSteps);
+  pre.innerHTML = transposeSong(rawContent, transposeSteps); // preview
+  document.getElementById(`key-${song.id}`).textContent = "Key: " + newKey;
+};
+
+downBtn.onclick = () => {
+  transposeSteps--;
+  const newKey = transposeKey(song.key, transposeSteps);
+  pre.innerHTML = transposeSong(rawContent, transposeSteps); // preview
+  document.getElementById(`key-${song.id}`).textContent = "Key: " + newKey;
+};
     sizeBtn.onclick = () => pre.classList.toggle('big-chords');
 
-    controls.append(showBtn, upBtn, downBtn, sizeBtn);
+    const saveBtn = document.createElement("button");
+saveBtn.textContent = "💾 Save Transpose";
+saveBtn.className = "bg-green-500 text-white px-2 rounded";
+
+saveBtn.onclick = async () => {
+  const newKey = await updateKey(song.key, transposeSteps, song.id, song.content);
+
+  if (newKey) {
+    // re-fetch updated version from Supabase
+    const { data, error } = await supabaseClient
+      .from("songs")
+      .select("*")
+      .eq("id", song.id)
+      .single();
+
+    if (!error && data) {
+      song.key = data.key;
+      song.content = data.content;
+      pre.innerHTML = renderChords(song.content);
+      document.getElementById(`key-${song.id}`).textContent = "Key: " + data.key;
+      transposeSteps = 0;
+    }
+  }
+};
+
+
+    controls.append(showBtn, upBtn, downBtn, sizeBtn, saveBtn);
 
     card.append(header, actions, controls, pre);
     list.appendChild(card);
   });
 }
-
-function updateKey(originalKey, steps, songId) {
+//transposeupdatekey
+async function updateKey(originalKey, steps, songId, originalContent) {
   if (!originalKey) return;
 
+  // 1️⃣ Remove any HTML tags (if present)
+  const cleanContent = originalContent.replace(/<[^>]+>/g, "");
+
+  // 2️⃣ Compute the new key
   let idx = ALL_CHORDS.indexOf(originalKey);
   if (idx === -1) return;
 
-  // Correct wrap-around for both + and - infinite steps
   let newIdx = ((idx + steps) % ALL_CHORDS.length + ALL_CHORDS.length) % ALL_CHORDS.length;
   const newKey = ALL_CHORDS[newIdx];
 
-  const keySpan = document.getElementById(`key-${songId}`);
-  if (keySpan) keySpan.textContent = "Key: " + newKey;
+  // 3️⃣ Transpose using clean content, ensuring [brackets]
+  let newContent = transposeSong(cleanContent, steps);
+
+  // ✅ 4️⃣ Convert all chords wrapped by renderChords (<span>) back into [ ] format
+  // In case transposeSong adds HTML styling
+  newContent = newContent
+    .replace(/<span[^>]*class="chord"[^>]*>(.*?)<\/span>/g, "[$1]")
+    .replace(/<\/?[^>]+(>|$)/g, ""); // remove any leftover HTML
+
+  // 5️⃣ Save to Supabase
+  const { error } = await supabaseClient
+    .from("songs")
+    .update({
+      key: newKey,
+      content: newContent.trim(),
+    })
+    .eq("id", songId);
+
+  if (error) {
+    console.error("Error saving transposed song:", error);
+    return null;
+  }
+
+  console.log("✅ Saved transposed song (bracket format):", newKey);
+  return newKey;
+
 }
 
 //SessionsSupabase
@@ -847,4 +946,3 @@ document.addEventListener("DOMContentLoaded", showUpdateModalIfNeeded);
   4TH LAMP • EST.2025
 </footer>
 </html>
-
