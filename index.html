@@ -18,7 +18,7 @@
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col font-sans">
   <!-- Header -->
-  <header class="bg-blue-600 text-white p-4 text-center text-xl font-bold">
+  <header class="bg-blue-600 text-white p-4 text-left text-xl font-bold">
     JLCCMI CHORD REPOSITORY
   </header>
 
@@ -246,13 +246,13 @@ function displaySongs() {
     const controls = document.createElement('div');
     controls.className = 'mt-2 flex gap-2';
     const showBtn = document.createElement('button');
-    showBtn.textContent = 'Show Chords'; showBtn.className = 'bg-blue-100 px-2 py-1 rounded';
+    showBtn.textContent = 'Chords'; showBtn.className = 'bg-blue-100 px-2 py-1 rounded';
     const upBtn = document.createElement('button');
     upBtn.textContent = '+'; upBtn.className = 'bg-gray-200 px-2 rounded';
     const downBtn = document.createElement('button');
     downBtn.textContent = '-'; downBtn.className = 'bg-gray-200 px-2 rounded';
     const sizeBtn = document.createElement('button');
-    sizeBtn.textContent = 'Toggle Size'; sizeBtn.className = 'bg-gray-200 px-2 rounded';
+    sizeBtn.textContent = 'Size'; sizeBtn.className = 'bg-gray-200 px-2 rounded';
 
     const pre = document.createElement('pre');
     pre.className = 'hidden mt-2 whitespace-pre-wrap font-mono text-sm bg-gray-50 p-2 rounded';
@@ -276,7 +276,7 @@ downBtn.onclick = () => {
     sizeBtn.onclick = () => pre.classList.toggle('big-chords');
 
 const saveBtn = document.createElement("button");
-saveBtn.textContent = "💾 Save Transpose";
+saveBtn.textContent = "💾";
 saveBtn.className = "bg-green-500 text-white px-2 rounded";
 
 saveBtn.onclick = async () => {
@@ -296,7 +296,11 @@ saveBtn.onclick = async () => {
       pre.innerHTML = renderChords(song.content);
       document.getElementById(`key-${song.id}`).textContent = "Key: " + data.key;
       transposeSteps = 0;
+
+      showTransposePopup();
     }
+
+
   }
 };
 
@@ -354,13 +358,13 @@ function renderSongs(listData) {
     const controls = document.createElement('div');
     controls.className = 'mt-2 flex gap-2';
     const showBtn = document.createElement('button');
-    showBtn.textContent = 'Show Chords'; showBtn.className = 'bg-blue-100 px-2 py-1 rounded';
+    showBtn.textContent = 'Chords'; showBtn.className = 'bg-blue-100 px-2 py-1 rounded';
     const upBtn = document.createElement('button');
-    upBtn.textContent = 'Transpose +'; upBtn.className = 'bg-gray-200 px-2 rounded';
+    upBtn.textContent = '+'; upBtn.className = 'bg-gray-200 px-2 rounded';
     const downBtn = document.createElement('button');
-    downBtn.textContent = 'Transpose -'; downBtn.className = 'bg-gray-200 px-2 rounded';
+    downBtn.textContent = '-'; downBtn.className = 'bg-gray-200 px-2 rounded';
     const sizeBtn = document.createElement('button');
-    sizeBtn.textContent = 'Toggle Size'; sizeBtn.className = 'bg-gray-200 px-2 rounded';
+    sizeBtn.textContent = 'Size'; sizeBtn.className = 'bg-gray-200 px-2 rounded';
 
     const pre = document.createElement('pre');
     pre.className = 'hidden mt-2 whitespace-pre-wrap font-mono text-sm bg-gray-50 p-2 rounded';
@@ -384,7 +388,7 @@ downBtn.onclick = () => {
     sizeBtn.onclick = () => pre.classList.toggle('big-chords');
 
     const saveBtn = document.createElement("button");
-saveBtn.textContent = "💾 Save Transpose";
+saveBtn.textContent = "💾Save Key";
 saveBtn.className = "bg-green-500 text-white px-2 rounded";
 
 saveBtn.onclick = async () => {
@@ -938,10 +942,36 @@ function showUpdateModalIfNeeded() {
 // Call this when app loads
 document.addEventListener("DOMContentLoaded", showUpdateModalIfNeeded);
 
+
+function showTransposePopup() {
+  const popup = document.getElementById('transposePopup');
+  popup.classList.remove('hidden');
+  popup.classList.add('flex');
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const okBtn = document.getElementById('popupOkBtn');
+  if (okBtn) {
+    okBtn.addEventListener('click', () => {
+      const popup = document.getElementById('transposePopup');
+      popup.classList.add('hidden');
+      popup.classList.remove('flex');
+      setTimeout(() => location.reload(), 300); // slight delay before reload
+    });
+  }
+});
 </script>
+
+<div id="transposePopup" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-50">
+  <div class="bg-white rounded-lg shadow-lg p-6 w-80 text-center">
+    <h2 class="text-lg font-bold text-blue-700 mb-2">✅ Transposition Saved</h2>
+    <p class="text-gray-700 mb-4">The song has been permanently saved with the new key.</p>
+    <button id="popupOkBtn" class="bg-blue-600 text-white px-4 py-2 rounded">OK</button>
+  </div>
+</div>
+
 </body>
 <footer class="w-full py-4 mt-8 bg-gray-100 text-center text-gray-600 text-sm font-sans">
   4TH LAMP • EST.2025
 </footer>
 </html>
-
