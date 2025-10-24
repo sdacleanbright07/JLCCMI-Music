@@ -12,9 +12,48 @@
      font-weight: 900;    /* extra bold */
      font-size: 1.1rem;   /* slightly larger */
    }
+
+   .spider {
+    position: fixed;
+    top: 0;
+    left: -50px;
+    font-size: 2rem;
+    animation: crawl 15s linear infinite;
+    z-index: 9999;
+    pointer-events: none;
+  }
+
+  @keyframes crawl {
+    0% {
+      top: 0;
+      left: -50px;
+      transform: rotate(0deg);
+    }
+    25% {
+      top: 40vh;
+      left: 30vw;
+      transform: rotate(20deg);
+    }
+    50% {
+      top: 75vh;
+      left: 70vw;
+      transform: rotate(-20deg);
+    }
+    75% {
+      top: 20vh;
+      left: 40vw;
+      transform: rotate(10deg);
+    }
+    100% {
+      top: 0;
+      left: -50px;
+      transform: rotate(0deg);
+    }
+  }  
   pre { white-space: pre-wrap; }
   pre.big-chords { font-size: 1.25rem; }
   </style>
+  <div class="spider">🕷️</div>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col font-sans">
   <!-- Header -->
@@ -976,4 +1015,5 @@ document.addEventListener("DOMContentLoaded", () => {
   4TH LAMP • EST.2025
 </footer>
 </html>
+
 
