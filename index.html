@@ -12,44 +12,15 @@
      font-weight: 900;    /* extra bold */
      font-size: 1.1rem;   /* slightly larger */
    }
-
    .spider {
     position: fixed;
-    top: 0;
-    left: -50px;
+    top: 50%;
+    left: 50%;
     font-size: 2rem;
-    animation: crawl 15s linear infinite;
+    transition: all 3s linear, opacity 1s ease;
     z-index: 9999;
     pointer-events: none;
   }
-
-  @keyframes crawl {
-    0% {
-      top: 0;
-      left: -50px;
-      transform: rotate(0deg);
-    }
-    25% {
-      top: 40vh;
-      left: 30vw;
-      transform: rotate(20deg);
-    }
-    50% {
-      top: 75vh;
-      left: 70vw;
-      transform: rotate(-20deg);
-    }
-    75% {
-      top: 20vh;
-      left: 40vw;
-      transform: rotate(10deg);
-    }
-    100% {
-      top: 0;
-      left: -50px;
-      transform: rotate(0deg);
-    }
-  }  
   pre { white-space: pre-wrap; }
   pre.big-chords { font-size: 1.25rem; }
   </style>
@@ -1000,6 +971,32 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+const spider = document.querySelector('.spider');
+
+  function randomPosition() {
+    const spiderSize = 40;
+    const padding = 20;
+    const maxX = window.innerWidth - spiderSize - padding;
+    const maxY = window.innerHeight - spiderSize - padding;
+    const x = Math.random() * maxX + padding;
+    const y = Math.random() * maxY + padding;
+    spider.style.left = `${x}px`;
+    spider.style.top = `${y}px`;
+    spider.style.transform = `rotate(${Math.random() * 360}deg)`;
+  }
+
+  // move every 3 seconds
+  const moveInterval = setInterval(randomPosition, 3000);
+  randomPosition();
+
+  // disappear after 15 seconds
+  setTimeout(() => {
+    spider.style.opacity = 0; // fade out
+    clearInterval(moveInterval); // stop moving
+    setTimeout(() => spider.remove(), 1000); // remove after fade
+  }, 15000);
+  
 </script>
 
 <div id="transposePopup" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-50">
@@ -1015,5 +1012,6 @@ document.addEventListener("DOMContentLoaded", () => {
   4TH LAMP • EST.2025
 </footer>
 </html>
+
 
 
